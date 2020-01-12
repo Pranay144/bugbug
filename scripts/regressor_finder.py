@@ -84,24 +84,29 @@ class RegressorFinder(object):
 
     def clone_git_repo(self, repo_url, repo_dir):
         if not os.path.exists(repo_dir):
-            tenacity.retry(
-                lambda: subprocess.run(
-                    ["git", "clone", "--quiet", repo_url, repo_dir], check=True
-                ),
-                wait=tenacity.wait_fixed(30),
-                stop=tenacity.stop_after_attempt(5),
-            )
 
-        tenacity.retry(
-            lambda: subprocess.run(
+            def func():
+                return lambda: subprocess.run(
+                    ["git", "clone", "--quiet", repo_url, repo_dir], check=True
+                )
+
+            r = tenacity.Retrying(
+                stop=tenacity.stop_after_attempt(5), wait=tenacity.wait_fixed(30)
+            )
+            r.call(func)
+
+        def func2():
+            return lambda: subprocess.run(
                 ["git", "pull", "--quiet", repo_url, "master"],
                 cwd=repo_dir,
                 capture_output=True,
                 check=True,
-            ),
-            wait=tenacity.wait_fixed(30),
-            stop=tenacity.stop_after_attempt(5),
+            )
+
+        r = tenacity.Retrying(
+            stop=tenacity.stop_after_attempt(5), wait=tenacity.wait_fixed(30)
         )
+        r.call(func2)
 
     def init_mapping(self):
         logger.info("Downloading Mercurial <-> git mapping file...")

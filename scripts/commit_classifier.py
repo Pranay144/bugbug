@@ -191,32 +191,39 @@ class CommitClassifier(object):
         logger.info(f"Cloning {repo_url}...")
 
         if not os.path.exists(repo_dir):
-            tenacity.retry(
-                lambda: subprocess.run(
-                    ["git", "clone", "--quiet", repo_url, repo_dir], check=True
-                ),
-                wait=tenacity.wait_fixed(30),
-                stop=tenacity.stop_after_attempt(5),
-            )
 
-        tenacity.retry(
-            lambda: subprocess.run(
+            def func():
+                return lambda: subprocess.run(
+                    ["git", "clone", "--quiet", repo_url, repo_dir], check=True
+                )
+
+            r = tenacity.Retrying(
+                stop=tenacity.stop_after_attempt(5), wait=tenacity.wait_fixed(30)
+            )
+            r.call(func)
+
+        def func2():
+            return lambda: subprocess.run(
                 ["git", "pull", "--quiet", repo_url, "master"],
                 cwd=repo_dir,
                 capture_output=True,
                 check=True,
-            ),
-            wait=tenacity.wait_fixed(30),
-            stop=tenacity.stop_after_attempt(5),
-        )
+            )
 
-        tenacity.retry(
-            lambda: subprocess.run(
-                ["git", "checkout", rev], cwd=repo_dir, capture_output=True, check=True
-            ),
-            wait=tenacity.wait_fixed(30),
-            stop=tenacity.stop_after_attempt(5),
+        r = tenacity.Retrying(
+            stop=tenacity.stop_after_attempt(5), wait=tenacity.wait_fixed(30)
         )
+        r.call(func2)
+
+        def func3():
+            return lambda: subprocess.run(
+                ["git", "checkout", rev], cwd=repo_dir, capture_output=True, check=True
+            )
+
+        r = tenacity.Retrying(
+            stop=tenacity.stop_after_attempt(5), wait=tenacity.wait_fixed(30)
+        )
+        r.call(func3)
 
     def update_commit_db(self):
         repository.clone(self.repo_dir)
