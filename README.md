@@ -1,3 +1,4 @@
+[![DeepSource](https://static.deepsource.io/deepsource-badge-dark-mini.svg)](https://deepsource.io/gh/Pranay144/bugbug/?ref=repository-badge)
 # bugbug
 
 Bugbug aims at leveraging machine learning techniques to help with bug and quality management, and other software engineering tasks.
